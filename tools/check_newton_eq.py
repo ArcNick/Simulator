@@ -80,9 +80,9 @@ theory_50_100  = np.exp(-np.pi * L / (Vp * f0) * (1/50 - 1/100)  * (freq_pos**2)
 fig, axes = plt.subplots(1, 3, figsize=(18, 5))
 
 # ---- Panel 1: 时域信号 (全时间显示) ----
-axes[0].plot(t_total, trace1, 'b', lw=0.8, label='Q=200')
-axes[0].plot(t_total, trace3, 'g', lw=0.8, label='Q=100')
-axes[0].plot(t_total, trace2, 'r', lw=0.8, label='Q=50')
+axes[0].plot(t_total, trace1, 'b', lw=1.5, label='Q=200')
+axes[0].plot(t_total, trace3, 'g', lw=1.5, label='Q=100')
+axes[0].plot(t_total, trace2, 'r', lw=1.5, label='Q=50')
 y_max = max(np.max(np.abs(trace1)), np.max(np.abs(trace2)), np.max(np.abs(trace3)))
 axes[0].set_ylim(-y_max * 1.1, y_max * 1.1)
 axes[0].set_xlim(0.15, 0.35)
@@ -91,30 +91,46 @@ axes[0].set_xlabel("Time (s)")
 axes[0].set_ylabel("Amplitude")
 axes[0].grid(True)
 axes[0].legend()
-
+axes[0].text(
+    0.5,
+    -0.14,
+    f'({chr(97 + 0)})',
+    transform=axes[0].transAxes,
+    ha='center',
+    va='top',
+    fontsize=15
+)
 # ---- Panel 2: 频谱曲线 ----
-axes[1].plot(freq_pos, amp1_pos, 'b-', lw=1.2, label=f'Q=200 (dom={dom1:.1f}Hz)')
-axes[1].plot(freq_pos, amp3_pos, 'g-', lw=1.2, label=f'Q=100 (dom={dom3:.1f}Hz)')
-axes[1].plot(freq_pos, amp2_pos, 'r-', lw=1.2, label=f'Q=50 (dom={dom2:.1f}Hz)')
+axes[1].plot(freq_pos, amp1_pos, 'b-', lw=1.5, label=f'Q=200')
+axes[1].plot(freq_pos, amp3_pos, 'g-', lw=1.5, label=f'Q=100')
+axes[1].plot(freq_pos, amp2_pos, 'r-', lw=1.5, label=f'Q=50')
 axes[1].set_xlim(0, 100)  
 axes[1].set_title("Frequency Spectrum")
 axes[1].set_xlabel("Frequency (Hz)")
 axes[1].set_ylabel("Amplitude")
 axes[1].grid(True)
 axes[1].legend()
-
+axes[1].text(
+    0.5,
+    -0.14,
+    f'({chr(97 + 1)})',
+    transform=axes[1].transAxes,
+    ha='center',
+    va='top',
+    fontsize=15
+)
 # ---- Panel 3: 幅比验证 (散点放大且压在理论线上方) ----
 # 红色：50 对比 200
 axes[2].plot(freq_pos, ratio_50_200_measured, 'ro', markersize=5, zorder=3, label='Measured 50/200')
-axes[2].plot(freq_pos, theory_50_200, 'k--', lw=1.0, zorder=2, label='Theory 50/200')
+axes[2].plot(freq_pos, theory_50_200, 'k--', lw=1.5, zorder=2, label='Theory 50/200')
 
 # 绿色：100 对比 200
 axes[2].plot(freq_pos, ratio_100_200_measured, 'go', markersize=5, zorder=3, label='Measured 100/200')
-axes[2].plot(freq_pos, theory_100_200, 'b--', lw=1.0, zorder=2, label='Theory 100/200')
+axes[2].plot(freq_pos, theory_100_200, 'b--', lw=1.5, zorder=2, label='Theory 100/200')
 
 # 品红：50 对比 100
 axes[2].plot(freq_pos, ratio_50_100_measured, 'mo', markersize=5, zorder=3, label='Measured 50/100')
-axes[2].plot(freq_pos, theory_50_100, 'y--', lw=1.0, zorder=2, label='Theory 50/100')
+axes[2].plot(freq_pos, theory_50_100, 'y--', lw=1.5, zorder=2, label='Theory 50/100')
 
 axes[2].set_xlim(0, 100)  
 axes[2].set_ylim(0, 1.1)
@@ -123,6 +139,14 @@ axes[2].set_xlabel("Frequency (Hz)")
 axes[2].set_ylabel("Amplitude Ratio")
 axes[2].grid(True)
 axes[2].legend(loc='upper right', fontsize=9)
-
+axes[2].text(
+    0.5,
+    -0.14,
+    f'({chr(97 + 2)})',
+    transform=axes[2].transAxes,
+    ha='center',
+    va='top',
+    fontsize=15
+)
 plt.tight_layout()
 plt.show()

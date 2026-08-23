@@ -37,12 +37,12 @@ def plot_combined():
         ax.set_ylim(case['ylim'])
         ax.text(
             0.5,
-            -0.18,
+            -0.14,
             f'({chr(97 + i)})',
             transform=ax.transAxes,
             ha='center',
             va='top',
-            fontsize=13
+            fontsize=14
 )
     
     plt.tight_layout()

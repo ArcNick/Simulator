@@ -46,7 +46,7 @@ FIELD_CMAP = {f: 'seismic' for f in FIELD_NAMES}
 # =============================================================================
 #                               目录与路径设置
 # =============================================================================
-OUTPUT_BASE = './output'
+OUTPUT_BASE = './brother/poro/10'
 IMAGE_BASE  = './images'
 MODEL_JSON  = './models/models.json'
 PARAMS_JSON = './models/params.json'
@@ -219,21 +219,22 @@ def plot_snapshot(fname, fbase, arr, cgrid):
     dx, dz = cgrid['dx'], cgrid['dz']
     nz, nx = arr.shape
     
-    fig, ax = plt.subplots(figsize=(12, nz / nx * 12))
+    fig, ax = plt.subplots(figsize=(14, nz / nx * 13))
     im = ax.imshow(
         arr, 
         cmap='seismic',
         vmin=FIELD_RANGE[fname][0], 
         vmax=FIELD_RANGE[fname][1],
-        extent=[-dx * (nx // 2), dx * (nx - nx // 2), dz * nz, 0],
+        # extent=[-dx * (nx // 2), dx * (nx - nx // 2), dz * nz, 0],
+        extent=[0, dx * nx, dz * nz, 0],
         aspect='equal'
     )
     fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
     
     ax.set_title(f'{fname} : {fbase}')
-    ax.set_xlabel('offset (m)', fontsize=14)
+    ax.set_xlabel('distance (m)', fontsize=14)
     ax.set_ylabel('z (m)', fontsize=14)
-    fig.subplots_adjust(left=0.08, right=0.92, top=0.95, bottom=0.05)
+    fig.subplots_adjust(left=0.08, right=0.92, top=0.95, bottom=0.1)
     
     out_png = os.path.join(IMAGE_BASE, fname, fbase.replace('.bin', '.png'))
     fig.savefig(out_png, dpi=80, bbox_inches=None)
@@ -284,7 +285,8 @@ def plot_record_cmap(bin_path, out_png, nx_total, dt, dx, pml,
     
     # 坐标系换算
     temp = np.arange(n_trace) * skip
-    x_coords = (temp - temp[-1] // 2 - 1) * dx
+    # x_coords = (temp - temp[-1] // 2 - 1) * dx
+    x_coords = (temp) * dx
     z_coords = np.arange(nt_new) * out_dt
     extent = [x_coords[0], x_coords[-1], z_coords[-1], z_coords[0]]
     
@@ -295,7 +297,7 @@ def plot_record_cmap(bin_path, out_png, nx_total, dt, dx, pml,
     fig.colorbar(im, ax=ax)
     
     ax.set_title('vz')
-    ax.set_xlabel('offset (m)')
+    ax.set_xlabel('distance (m)')
     ax.set_ylabel('time (s)')
     
     fig.savefig(out_png, dpi=100, bbox_inches='tight')
@@ -327,7 +329,7 @@ def main():
     pml      = params['cpml']['thickness']
     shot_num = len(params['base']['posx'])
     dt       = 0.001  # 固定的采样间隔
-    
+    print(shot_num)
     print_progress(f'使用固定采样间隔 dt = {dt} s')
 
     # ---------------------------------------------------------
@@ -370,7 +372,7 @@ def main():
                 ftype='half_z', 
                 skip=1, 
                 out_dt=0.001, 
-                fixed_limit=2e-8
+                fixed_limit=1.5e-8
             )
 
     # ---------------------------------------------------------

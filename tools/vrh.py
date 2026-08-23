@@ -12,6 +12,7 @@ from scipy.ndimage import gaussian_filter
 SOLID   = 0
 VESOLID = 1
 FLUID   = 2
+VRH     = 3
 # ========== 模型参数 ==========
 # 粗网格尺寸
 nx = 601
@@ -22,7 +23,7 @@ dz = 1.5
 # 时间参数
 fpeak = 30.0
 dt = 4e-6
-nt = 140000
+nt = 2
 snapshot = 2500
 
 # 基准模型 VTI
@@ -261,29 +262,18 @@ for idx, region in enumerate(fine_regions):
         seed=seed + idx
     )
 
-    phi = phi_target
-    rho_f = rho_fluid
-    rho_s = rho_2
-    fine_rho_vrh = (1 - phi) * rho_s + phi * rho_f
 
-    fine_C11_1 = (1 - phi) * C11_2 + phi * C11_fluid
-    fine_C13_1 = (1 - phi) * C13_2 + phi * C13_fluid
-    fine_C33_1 = (1 - phi) * C33_2 + phi * C33_fluid
-    fine_C55_1 = (1 - phi) * C55_2 + phi * C55_fluid
 
-    fine_C11_2 = 1 / (C11_2**(-1) * (1 - phi) + C11_fluid**(-1) * phi)
-    fine_C13_2 = 1 / (C13_2**(-1) * (1 - phi) + C13_fluid**(-1) * phi)
-    fine_C33_2 = 1 / (C33_2**(-1) * (1 - phi) + C33_fluid**(-1) * phi)
-    # fine_C55_2 = 1 / (C55_2**(-1) * (1 - phi) + C55_fluid**(-1) * phi)
-
-    fine_rho[border:-border, border:-border] = fine_rho_vrh
-    fine_C11[border:-border, border:-border] = (fine_C11_1 + fine_C11_2) / 2
-    fine_C13[border:-border, border:-border] = (fine_C13_1 + fine_C13_2) / 2
-    fine_C33[border:-border, border:-border] = (fine_C33_1 + fine_C33_2) / 2
-    fine_C55[border:-border, border:-border] = fine_C55_1
-
+    # 将流体区域标记为 FLUID
+    fine_MAT[porosity_mask == 1] = FLUID
+    fine_C11[fine_MAT == FLUID] = C11_fluid
+    fine_C13[fine_MAT == FLUID] = C13_fluid
+    fine_C33[fine_MAT == FLUID] = C33_fluid
+    fine_C55[fine_MAT == FLUID] = C55_fluid
+    fine_rho[fine_MAT == FLUID] = rho_fluid
+    fine_zeta[fine_MAT == FLUID] = zeta
     # ========== 细网格可视化：孔隙掩膜 ==========
-    plt.figure(figsize=(10, 10))
+    plt.figure(figsize=(8, 8))
     plt.imshow(porosity_mask, cmap='gray', interpolation='none')
     plt.text(0.5, -0.07, f'({chr(97+4)})', 
          transform=plt.gca().transAxes,  # 使用当前axes的坐标系统
@@ -414,3 +404,4 @@ coarse_inv_tsig2.tofile(os.path.join(coarse_dir, "inv_tsig2.bin"))
 coarse_inv_tsig3.tofile(os.path.join(coarse_dir, "inv_tsig3.bin"))
 coarse_zeta.tofile(os.path.join(coarse_dir, "zeta.bin"))
 
+print("当前孔隙度:", phi_target)

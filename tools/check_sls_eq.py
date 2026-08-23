@@ -135,12 +135,12 @@ axes2[0].grid(True)
 axes2[0].legend()
 axes2[0].text(
     0.5,
-    -0.15,
+    -0.14,
     '(a)',
     transform=axes2[0].transAxes,
     ha='center',
     va='top',
-    fontsize=13
+    fontsize=14
 )
 
 # ---- Frequency spectrum (raw) ----
@@ -155,12 +155,12 @@ axes2[1].grid(True)
 axes2[1].legend()
 axes2[1].text(
     0.5,
-    -0.15,
+    -0.14,
     '(b)',
     transform=axes2[1].transAxes,
     ha='center',
     va='top',
-    fontsize=13
+    fontsize=14
 )
 # ---- Amplitude ratios (including 20 vs 50) ----
 axes2[2].plot(freq_pos, ratio_50_200_measured, 'r.', markersize=3, label='Measured 50/200')
@@ -178,12 +178,12 @@ axes2[2].legend(loc='upper right', fontsize=9)
 axes2[2].grid(True)
 axes2[2].text(
     0.5,
-    -0.15,
+    -0.14,
     '(c)',
     transform=axes2[2].transAxes,
     ha='center',
     va='top',
-    fontsize=13
+    fontsize=14
 )
 plt.tight_layout()
 plt.show()

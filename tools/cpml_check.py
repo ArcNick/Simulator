@@ -9,10 +9,10 @@ VESOLID = 1
 FLUID   = 2
 # ========== 模型参数 ==========
 # 粗网格尺寸
-nx = 701
-nz = 501
-dx = 3
-dz = 3
+nx = 521
+nz = 151
+dx = 2
+dz = 2
 
 # 时间参数
 fpeak = 30.0
@@ -31,24 +31,16 @@ C55_1 = rho1 * vs1**2
 C11_1 = C33_1 * (1 + 2 * epsilon)
 C13_1 = ((C33_1 - C55_1) * (2 * C33_1 * delta + (C33_1 - C55_1)))**0.5 - C55_1
 
-rho2 = 2600.0
-vp2 = 4800.0
-vs2 = 2800
-C33_2 = rho2 * vp2**2
-C55_2 = rho2 * vs2**2
-C11_2 = C33_2 * (1 + 2 * epsilon)
-C13_2 = ((C33_2 - C55_2) * (2 * C33_2 * delta + (C33_2 - C55_2)))**0.5 - C55_2
-
 # 震源位置
-posx = [nx // 2]
-posz = 40
+posx = [40]
+posz = 23
 
 # CPML参数
-cpml_thickness = 20
+cpml_thickness = 12
 cpml_N = 3
-cp_max = 5000
+cp_max = 4000
 Rc = 0.0001
-kappa0 = 1.2
+kappa0 = 1
 
 # ========== 创建目录结构 ==========
 base_dir = "models"
@@ -70,12 +62,6 @@ coarse_taus = np.full((nz, nx), 0, dtype=np.float32)
 coarse_inv_tsig1 = np.full((nz, nx), 0, dtype=np.float32)
 coarse_inv_tsig2 = np.full((nz, nx), 0, dtype=np.float32)
 coarse_inv_tsig3 = np.full((nz, nx), 0, dtype=np.float32)
-
-coarse_rho[350:, :] = rho2
-coarse_C11[350:, :] = C11_2
-coarse_C13[350:, :] = C13_2
-coarse_C33[350:, :] = C33_2
-coarse_C55[350:, :] = C55_2
 
 # ========== 粗网格可视化：纵波阻抗 ==========
 coarse_imp = np.sqrt(coarse_C33 * coarse_rho)  # 纵波阻抗

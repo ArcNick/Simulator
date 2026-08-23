@@ -10,9 +10,9 @@ FLUID   = 2
 # ========== 模型参数 ==========
 # 粗网格尺寸
 nx = 701
-nz = 501
-dx = 3
-dz = 3
+nz = 601
+dx = 2
+dz = 2
 
 # 时间参数
 fpeak = 30.0
@@ -20,24 +20,18 @@ dt = 5e-5
 nt = 20000
 snapshot = 400
 
-epsilon = 0.0
-delta = 0.0
-# gamma = 0.00
-rho1 = 2550.0
-vp1 = 4000.0
-vs1 = 2300
-C33_1 = rho1 * vp1**2
-C55_1 = rho1 * vs1**2
-C11_1 = C33_1 * (1 + 2 * epsilon)
-C13_1 = ((C33_1 - C55_1) * (2 * C33_1 * delta + (C33_1 - C55_1)))**0.5 - C55_1
+# epsilon = [0.08, 0.1, 0.05, 0.15]
+# delta = [0.03, 0.06, 0.02, 0.08]
+epsilon = [0.0, 0.0, 0.0, 0.0]
+delta = [0.0, 0.0, 0.0, 0.0]
+rho = [2300.0, 2450.0, 2350.0, 2600.0]
+vp = [3500.0, 4000.0, 3700.0, 4800.0]
+vs = [1900.0, 2200.0, 2000.0, 2700.0]
 
-rho2 = 2600.0
-vp2 = 4800.0
-vs2 = 2800
-C33_2 = rho2 * vp2**2
-C55_2 = rho2 * vs2**2
-C11_2 = C33_2 * (1 + 2 * epsilon)
-C13_2 = ((C33_2 - C55_2) * (2 * C33_2 * delta + (C33_2 - C55_2)))**0.5 - C55_2
+C33 = np.array(rho) * np.array(vp)**2
+C55 = np.array(rho) * np.array(vs)**2
+C11 = C33 * (1 + 2 * np.array(epsilon))
+C13 = ((C33 - C55) * (2 * C33 * np.array(delta) + (C33 - C55)))**0.5 - C55
 
 # 震源位置
 posx = [nx // 2]
@@ -46,7 +40,7 @@ posz = 40
 # CPML参数
 cpml_thickness = 20
 cpml_N = 3
-cp_max = 5000
+cp_max = 4800
 Rc = 0.0001
 kappa0 = 1.2
 
@@ -59,11 +53,11 @@ os.makedirs(fine_dir, exist_ok=True)
 
 # ========== 生成粗网格模型 ==========
 coarse_MAT = np.full((nz, nx), SOLID, dtype=np.int32)
-coarse_rho = np.full((nz, nx), rho1, dtype=np.float32)
-coarse_C11 = np.full((nz, nx), C11_1, dtype=np.float32)
-coarse_C13 = np.full((nz, nx), C13_1, dtype=np.float32)
-coarse_C33 = np.full((nz, nx), C33_1, dtype=np.float32)
-coarse_C55 = np.full((nz, nx), C55_1, dtype=np.float32)
+coarse_rho = np.full((nz, nx), rho[0], dtype=np.float32)
+coarse_C11 = np.full((nz, nx), C11[0], dtype=np.float32)
+coarse_C13 = np.full((nz, nx), C13[0], dtype=np.float32)
+coarse_C33 = np.full((nz, nx), C33[0], dtype=np.float32)
+coarse_C55 = np.full((nz, nx), C55[0], dtype=np.float32)
 coarse_zeta = np.full((nz, nx), 0, dtype=np.float32)
 coarse_taup = np.full((nz, nx), 0, dtype=np.float32)
 coarse_taus = np.full((nz, nx), 0, dtype=np.float32)
@@ -71,11 +65,23 @@ coarse_inv_tsig1 = np.full((nz, nx), 0, dtype=np.float32)
 coarse_inv_tsig2 = np.full((nz, nx), 0, dtype=np.float32)
 coarse_inv_tsig3 = np.full((nz, nx), 0, dtype=np.float32)
 
-coarse_rho[350:, :] = rho2
-coarse_C11[350:, :] = C11_2
-coarse_C13[350:, :] = C13_2
-coarse_C33[350:, :] = C33_2
-coarse_C55[350:, :] = C55_2
+coarse_rho[120:280, :] = rho[1]
+coarse_C11[120:280, :] = C11[1]
+coarse_C13[120:280, :] = C13[1]
+coarse_C33[120:280, :] = C33[1]
+coarse_C55[120:280, :] = C55[1]
+
+coarse_rho[280:450, :] = rho[2]
+coarse_C11[280:450, :] = C11[2]
+coarse_C13[280:450, :] = C13[2]
+coarse_C33[280:450, :] = C33[2]
+coarse_C55[280:450, :] = C55[2]
+
+coarse_rho[450:, :] = rho[3]
+coarse_C11[450:, :] = C11[3]
+coarse_C13[450:, :] = C13[3]
+coarse_C33[450:, :] = C33[3]
+coarse_C55[450:, :] = C55[3]
 
 # ========== 粗网格可视化：纵波阻抗 ==========
 coarse_imp = np.sqrt(coarse_C33 * coarse_rho)  # 纵波阻抗

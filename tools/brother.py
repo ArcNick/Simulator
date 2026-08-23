@@ -1,52 +1,61 @@
-import os
-import json
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.ndimage import gaussian_filter
-
-SOLID   = 0
+import sls
+import os
+import json
+import schoenberg as sch
+SOLID = 0
 VESOLID = 1
-FLUID   = 2
-# ========== 模型参数 ==========
-# 粗网格尺寸
-nx = 701
-nz = 501
-dx = 3
-dz = 3
+FLUID = 2
+
+# --- 参数设置 ---
+nz, nx = 706, 690  # 原始尺寸
+dx = 1.5               # 目标间距
+dz = 1.5
 
 # 时间参数
 fpeak = 30.0
-dt = 5e-5
-nt = 20000
+dt = 1e-5
+nt = 60000
 snapshot = 400
 
-epsilon = 0.0
-delta = 0.0
-# gamma = 0.00
-rho1 = 2550.0
-vp1 = 4000.0
-vs1 = 2300
-C33_1 = rho1 * vp1**2
-C55_1 = rho1 * vs1**2
-C11_1 = C33_1 * (1 + 2 * epsilon)
-C13_1 = ((C33_1 - C55_1) * (2 * C33_1 * delta + (C33_1 - C55_1)))**0.5 - C55_1
+input_file = "vp.bin"
 
-rho2 = 2600.0
-vp2 = 4800.0
-vs2 = 2800
-C33_2 = rho2 * vp2**2
-C55_2 = rho2 * vs2**2
-C11_2 = C33_2 * (1 + 2 * epsilon)
-C13_2 = ((C33_2 - C55_2) * (2 * C33_2 * delta + (C33_2 - C55_2)))**0.5 - C55_2
+vp = np.fromfile(input_file, dtype=np.float32)
+vp = vp.reshape((nz, nx))
+vp_max = vp.max()
+vs = vp / 1.89
+coarse_rho = 310 * np.power(vp, 0.25)
+
+epsilon_1 = 0.0
+delta_1 = 0.0
+coarse_C33 = coarse_rho * vp**2
+coarse_C55 = coarse_rho * vs**2
+coarse_C11 = coarse_C33 * (1 + 2 * epsilon_1)
+coarse_C13 = ((coarse_C33 - coarse_C55) * (2 * coarse_C33 * delta_1 + (coarse_C33 - coarse_C55)))**0.5 - coarse_C55
+
+Qp1 = 25
+Qs1 = 15
+sls_params = sls.get_sls_parameters(Qp1, Qs1, 3, 2, 100)
+inv_tss1 = 1 / sls_params["tau_sigmas"]
+taup1 = sls_params["taup"]
+taus1 = sls_params["taus"]
+
+Qp2 = 40
+Qs2 = 25
+sls_params = sls.get_sls_parameters(Qp2, Qs2, 3, 2, 100)
+inv_tss2 = 1 / sls_params["tau_sigmas"]
+taup2 = sls_params["taup"]
+taus2 = sls_params["taus"]
 
 # 震源位置
-posx = [nx // 2]
-posz = 40
+posx = nx // 2
+posz = 38
 
 # CPML参数
 cpml_thickness = 20
 cpml_N = 3
-cp_max = 5000
+cp_max = 6500
 Rc = 0.0001
 kappa0 = 1.2
 
@@ -59,11 +68,6 @@ os.makedirs(fine_dir, exist_ok=True)
 
 # ========== 生成粗网格模型 ==========
 coarse_MAT = np.full((nz, nx), SOLID, dtype=np.int32)
-coarse_rho = np.full((nz, nx), rho1, dtype=np.float32)
-coarse_C11 = np.full((nz, nx), C11_1, dtype=np.float32)
-coarse_C13 = np.full((nz, nx), C13_1, dtype=np.float32)
-coarse_C33 = np.full((nz, nx), C33_1, dtype=np.float32)
-coarse_C55 = np.full((nz, nx), C55_1, dtype=np.float32)
 coarse_zeta = np.full((nz, nx), 0, dtype=np.float32)
 coarse_taup = np.full((nz, nx), 0, dtype=np.float32)
 coarse_taus = np.full((nz, nx), 0, dtype=np.float32)
@@ -71,27 +75,33 @@ coarse_inv_tsig1 = np.full((nz, nx), 0, dtype=np.float32)
 coarse_inv_tsig2 = np.full((nz, nx), 0, dtype=np.float32)
 coarse_inv_tsig3 = np.full((nz, nx), 0, dtype=np.float32)
 
-coarse_rho[350:, :] = rho2
-coarse_C11[350:, :] = C11_2
-coarse_C13[350:, :] = C13_2
-coarse_C33[350:, :] = C33_2
-coarse_C55[350:, :] = C55_2
+coarse_MAT[(vp == 4000) | (vp == 5500) | (vp == 5550) | (vp == 5580) | (vp == 5630) | (vp == 5750)] = VESOLID
+coarse_MAT[-30:, :] = SOLID
+coarse_taup[vp == 4000] = taup2
+coarse_taus[vp == 4000] = taus2
+coarse_inv_tsig1[vp == 4000] = inv_tss2[0]
+coarse_inv_tsig2[vp == 4000] = inv_tss2[1]
+coarse_inv_tsig3[vp == 4000] = inv_tss2[2]
 
-# ========== 粗网格可视化：纵波阻抗 ==========
-coarse_imp = np.sqrt(coarse_C33 * coarse_rho)  # 纵波阻抗
-plt.figure(figsize=(12, 10))
-plt.imshow(coarse_imp, cmap='viridis', aspect='auto', origin='upper')
-plt.colorbar(label='Impedance (kg/(m²·s))')
-plt.title('Coarse Model: P-wave Impedance')
-plt.xlabel('X (grid cells)')
-plt.ylabel('Z (grid cells)')
-plt.tight_layout()
-plt.savefig(os.path.join(coarse_dir, "impedance.png"), dpi=150)
-plt.close()
-print("粗网格阻抗图已保存至 models/coarse/impedance.png")
+coarse_taup[(vp == 5500) | (vp == 5550) | (vp == 5580) | (vp == 5630) | (vp == 5750)] = taup1
+coarse_taus[(vp == 5500) | (vp == 5550) | (vp == 5580) | (vp == 5630) | (vp == 5750)] = taus1
+coarse_inv_tsig1[(vp == 5500) | (vp == 5550) | (vp == 5580) | (vp == 5630) | (vp == 5750)] = inv_tss2[0]
+coarse_inv_tsig2[(vp == 5500) | (vp == 5550) | (vp == 5580) | (vp == 5630) | (vp == 5750)] = inv_tss2[1]
+coarse_inv_tsig3[(vp == 5500) | (vp == 5550) | (vp == 5580) | (vp == 5630) | (vp == 5750)] = inv_tss2[2]
 
+def check(Vp: float):
+    if Vp == 5500 or Vp == 5550 or Vp == 5580 or Vp == 5630 or Vp == 5750:
+        return True
+    else:
+        return False
 
-# ========== 生成 models.json ==========
+for iz in range(nz):
+    for ix in range(nx):
+        if check(vp[iz, ix]) == True:
+            coarse_C11[iz, ix], coarse_C13[iz, ix], coarse_C33[iz, ix], coarse_C55[iz, ix] = sch.single_fracture_HTI(
+                coarse_C11[iz, ix], coarse_C13[iz, ix], coarse_C33[iz, ix], coarse_C55[iz, ix], num_frac=np.random.randint(50)
+            )
+
 models_config = {
     "coarse": {
         "nx": nx,

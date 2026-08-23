@@ -54,7 +54,7 @@ public:
 };
 
 void smooth_fine(GridManager &gm, StreamManager &stream_manager, int time);
-void output_snapshots(GridManager &gm, int idx, int it, float dt, int time);
+void output_snapshots(GridManager &gm, std::string vz_dir, int idx, int it, float dt, int time);
 void output_record(const GridManager &gm, int z, FILE *fp_vz, int time);
 bool clear_folder(const fs::path& dir);
 
@@ -67,7 +67,7 @@ bool clear_folder(const fs::path& dir);
 // }
 
 
-int main() {
+int main(int argc, char *argv[]) {
     GridManager gm("models/models.json");
     Params params("models/params.json");
     Cpml cpml("models/params.json");
@@ -83,13 +83,19 @@ int main() {
     }
     StreamManager stream_manager;
 
-    clear_folder("./output");
-    system("mkdir -p ./output/record");
-    // system("mkdir -p ./output/vx");
-    system("mkdir -p ./output/vz");
-    // system("mkdir -p ./output/sx");
-    // system("mkdir -p ./output/sz");
-    // system("mkdir -p ./output/txz");
+    std::string output_dir;
+    if (argc > 1) {
+        output_dir = "./" + std::string(argv[1]);
+    } else {
+        output_dir = "./output";
+    }
+    std::cout << "Output directory: " << output_dir << '\n';
+
+    clear_folder(output_dir.c_str());
+    std::string record_dir = output_dir + "/record";
+    std::string vz_dir = output_dir + "/vz";
+    system((std::string("mkdir -p ") + record_dir).c_str());
+    system((std::string("mkdir -p ") + vz_dir).c_str());
 
     int gap = TARGET_DT / params.dt;
 
@@ -101,13 +107,13 @@ int main() {
         printf("Shot %d: posx = %d, posz = %d\n", idx, shot_posx, shot_posz);
 
         FILE *fp_record_vz = fopen(
-            ("output/record/record_vz_" + std::to_string(idx) + ".bin").c_str(), "wb"
+            (record_dir + "/record_vz_" + std::to_string(idx) + ".bin").c_str(), "wb"
         );
         if (!fp_record_vz) {
             std::cerr << "Failed to open output file for recording.\n";
             return -1;
         }
-        system(("mkdir -p ./output/vz/" + std::to_string(idx)).c_str());
+        system(("mkdir -p " + vz_dir + "/" + std::to_string(idx)).c_str());
         
         for (int it = 0; it < params.nt; it++) {
             int cur = it & 1;
@@ -149,7 +155,7 @@ int main() {
                 smooth_fine(gm, stream_manager, cur);
             }
             if (it % params.snapshot == 0) {
-                output_snapshots(gm, idx, it, params.dt, cur);
+                output_snapshots(gm, vz_dir, idx, it, params.dt, cur);
                 printf("finished %0.2f%%\r", 100.0 * it / params.nt);
                 fflush(stdout);
             }
@@ -168,7 +174,7 @@ int main() {
 void smooth_fine(GridManager &gm, StreamManager &sm, int time) {
     if (gm.fine_info.size() == 0) return;
     dim3 block(16, 16);
-    int level = 0;
+    int level = 3;
     for (int i = 0; i < gm.fine_info.size(); i++) {
         dim3 grid_fi((gm.fine_info[i].lenx + 15) / 16, (gm.fine_info[i].lenz + 15) / 16);
         smooth_fine_vx<<<grid_fi, block, 0, sm.stream_vx>>>(gm.core_d.vx, gm.core_temp.vx, i, time, level);
@@ -224,16 +230,16 @@ void smooth_fine(GridManager &gm, StreamManager &sm, int time) {
     cudaStreamSynchronize(sm.stream_rxz3);
 }
 
-void output_snapshots(GridManager &gm, int idx, int it, float dt, int time) {
+void output_snapshots(GridManager &gm, std::string vz_dir, int idx, int it, float dt, int time) {
     float time_sec = it * dt;
     int time_ms = static_cast<int>(time_sec * 1000);
     
-    static char buf[32];
+    static char buf[64];
 
     // snprintf(buf, sizeof(buf), "output/vx/vx_%05dms.bin", time_ms);
     // std::string filename_vx = buf;
     
-    snprintf(buf, sizeof(buf), "output/vz/%d/vz_%05dms.bin", idx, time_ms);
+    snprintf(buf, sizeof(buf), "%s/%d/vz_%05dms.bin", vz_dir.c_str(), idx, time_ms);
     std::string filename_vz = buf;
 
     // snprintf(buf, sizeof(buf), "output/sx/sx_%05dms.bin", time_ms);
